@@ -29,6 +29,11 @@ app.use('/weather', require('./routes/weather'))
 // 支付相关接口：创建订单 / 查询状态 / 异步通知（路径前缀 /pay）
 app.use('/pay', require('./routes/pay'))
 
+// 前端静态资源：把 Vue 构建产物放在 backend/public 下，由后端一起提供，
+// 这样前后端同源，浏览器访问根路径直接打开 H5 页面，且接口不需要跨域。
+// 注意：必须放在所有接口路由之后，避免静态托管抢掉 /user、/weather 等接口请求
+app.use(express.static(require('node:path').join(__dirname, 'public')))
+
 // 先初始化数据库（建表），再启动 HTTP 服务，
 // 避免服务起来了但表还没建好的窗口期
 initDB()

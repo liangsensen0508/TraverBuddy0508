@@ -12,6 +12,7 @@
         v-for="item in questions"
         :key="item"
         class="question-item"
+        @click="handleSelect(item)"
       >
         <van-icon name="chat-o" class="q-icon" />
         <span class="q-text">{{ item }}</span>
@@ -27,13 +28,22 @@
 </template>
 
 <script setup lang="ts">
+// 点击推荐问题后把问题文本抛给父组件，由父组件直接发给 AI
+const emit = defineEmits<{ select: [string] }>()
+
+/** 杭州相关的默认推荐问题 */
 const questions = [
-  '哀牢山可以进入探险旅游吗',
-  '大理古城有哪些夜市可以逛',
-  '昆明滇池可以游船吗',
-  '带着家人到丽江旅游三天，帮我规划一个行程吧',
-  '在云南旅游遇到黑导游怎么办',
+  '杭州天气怎么样',
+  '西湖有哪些必打卡的景点',
+  '杭州三天两晚怎么安排行程',
+  '去杭州坐高铁怎么买票',
+  '杭州有哪些当地美食推荐',
 ]
+
+/** 点击某个问题：通知父组件自动发送 */
+function handleSelect(text: string) {
+  emit('select', text)
+}
 </script>
 
 <style scoped lang="less">

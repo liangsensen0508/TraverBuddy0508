@@ -31,7 +31,6 @@ declare module 'vue' {
     VanSearch: typeof import('vant/es')['Search']
     VanSwipe: typeof import('vant/es')['Swipe']
     VanSwipeItem: typeof import('vant/es')['SwipeItem']
-    VanToast: typeof import('vant/es')['Toast']
     VanUploader: typeof import('vant/es')['Uploader']
     WeatherCard: typeof import('./src/components/WeatherCard.vue')['default']
   }

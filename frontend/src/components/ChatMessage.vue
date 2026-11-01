@@ -1,6 +1,10 @@
 <template>
   <div class="chat-message" :class="role">
-    <img class="message-avatar" src="@/assets/mm2.jpg" alt="卯卯" />
+    <!-- AI 用卯卯头像；用户用蓝色图标头像，避免两边头像完全一样 -->
+    <img v-if="role === 'ai'" class="message-avatar" src="@/assets/mm2.jpg" alt="卯卯" />
+    <div v-else class="message-avatar user-avatar">
+      <van-icon name="user-o" size="18" />
+    </div>
 
     <!-- 消息内容：loading 时显示打字动画，否则图片在上、文本在下 -->
     <div class="message-content">
@@ -80,6 +84,15 @@ const renderedText = computed(() => {
     border-radius: 50%;
     object-fit: cover;
     object-position: center top;
+  }
+
+  // 用户头像：纯 CSS 圆形图标，和 AI 的照片头像区分开
+  .user-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: linear-gradient(135deg, #6db8ff, @primary);
   }
 
   .message-content {

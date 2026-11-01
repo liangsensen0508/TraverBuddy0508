@@ -52,12 +52,13 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { setUserInfo, setToken } from '@/utils/auth'
 import { loginApi } from '@/api'
 
 const router = useRouter()
+const route = useRoute()
 
 /** 表单数据：用户名 + 密码 */
 const form = reactive({
@@ -91,7 +92,8 @@ function validate() {
 
 /**
  * 登录提交：调用 POST /user/login
- * 成功后保存 token 与用户信息，进入个人中心；失败由响应拦截器统一提示
+ * 成功后保存 token 与用户信息，并回到登录前想去的页面（没指定就回首页）；
+ * 失败由响应拦截器统一提示
  */
 async function onLogin() {
   if (!validate()) return
@@ -105,11 +107,15 @@ async function onLogin() {
     if (res?.token) setToken(res.token)
     setUserInfo({
       nickname: form.username.trim(),
-      phone: res?.phone || '',
+      phone: res?.phone || '',  
       avatar: res?.avatar,
     })
     showToast('登录成功')
-    setTimeout(() => router.replace('/profile'), 400)
+    // redirect 由「需要登录」的页面带过来，例如商品详情 /goods-details?id=xxx
+    // 只接受站内路径（以 / 开头），防止被构造成外链跳走
+    const redirect = route.query.redirect as string | undefined
+    const target = redirect?.startsWith('/') ? redirect : '/'
+    setTimeout(() => router.replace(target), 400)
   } catch {
     // 错误提示已由响应拦截器处理
   } finally {

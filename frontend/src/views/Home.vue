@@ -3,8 +3,8 @@
     <!-- 头部欢迎区 -->
     <HomeHeader />
 
-    <!-- 推荐问题卡片 + 换一换 -->
-    <QuestionCard />
+    <!-- 推荐问题卡片 + 换一换（点击问题直接发给 AI） -->
+    <QuestionCard @select="askQuestion" />
 
     <!-- 商品列表（横向滚动，点击进入详情页） -->
     <ProductList :items="products" @select="openProduct" />
@@ -83,6 +83,11 @@ watch(messages, async () => {
 /** 点击商品：跳到详情页并带上商品 id */
 function openProduct(item: ProductListItem) {
   router.push({ name: 'goods-details', query: { id: item.id } })
+}
+
+/** 点击推荐问题：直接当作用户消息发送，省去手动输入 */
+function askQuestion(text: string) {
+  handleSend({ text })
 }
 
 /** 进入首页时拉取商品列表，供推荐位展示 */

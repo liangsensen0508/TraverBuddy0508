@@ -151,7 +151,8 @@ const submitting = ref(false)
 async function onBook() {
   if (!isLoggedIn()) {
     showToast('请先登录')
-    router.push('/login')
+    // 带上当前页面地址，登录成功后能自动回到这个商品详情
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
     return
   }
   if (!product.value || submitting.value) return

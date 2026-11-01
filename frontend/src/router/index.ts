@@ -55,8 +55,9 @@ const router = createRouter({
  * TODO: 接入真实接口后，可改为校验 token 是否有效
  */
 router.beforeEach((to) => {
+  // 带上原地址，登录成功后才能回到用户本来想去的页面
   if (to.meta.requiresAuth && !isLoggedIn()) {
-    return { path: '/login' }
+    return { path: '/login', query: { redirect: to.fullPath } }
   }
 })
 
