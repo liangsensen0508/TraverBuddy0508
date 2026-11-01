@@ -20,17 +20,31 @@
 | `SILICONFLOW_BASE_URL` | 可选 | 国内站用 `.cn` 端点 | `https://api.siliconflow.cn/v1` |
 | `SILICONFLOW_MODEL` | 可选 | 默认 `deepseek-ai/DeepSeek-V3` | `deepseek-ai/DeepSeek-V3` |
 
-### 支付宝（如支付功能要正式上线，才需配置；否则可暂缓）
+### 支付宝 AI 付（真实收款，已开通 aipay.alipay.com）
 
-| 变量名 | 说明 |
-|---|---|
-| `ATPAY_APP_ID` | 正式环境 APPID（当前是沙箱 `9021...`，需在开放平台完成审核后替换） |
-| `ATPAY_GATEWAY` | 生产网关 `https://openapi.alipay.com/gateway.do`（当前是沙箱网关） |
-| `ATPAY_PRIVATE_KEY` | 正式应用私钥 |
-| `ATPAY_ALIPAY_PUBLIC_KEY` | 支付宝公钥 |
-| `ATPAY_RETURN_URL` | 支付完成后回跳地址，需公网可访问：`https://你的后端域名/pay/return` |
-| `ATPAY_FRONT_URL` | 前端正式地址，如 `https://你的前端域名` |
-| `ATPAY_NOTIFY_URL` | 异步通知地址，**必须公网可访问**：`https://你的后端域名/pay/notify` |
+个人创作者可用 AI 付收款，无需企业资质。接入值全部来自 **aipay.alipay.com 控制台**：
+
+| 变量名 | 去哪拿 | 说明 |
+|---|---|---|
+| `ATPAY_APP_ID` | 控制台「线上验证」 | 线上 APPID（2021/2024 开头 16 位数字），替换沙箱 `9021...` |
+| `ATPAY_PRIVATE_KEY` | 控制台密钥管理 | 线上应用私钥，选 **Node.js / 非 Java 格式** |
+| `ATPAY_ALIPAY_PUBLIC_KEY` | 控制台密钥管理 | 线上支付宝公钥（验证异步通知签名） |
+| `ATPAY_GATEWAY` | 固定值 | 改成 `https://openapi.alipay.com/gateway.do` |
+
+> ⚠️ 上面 4 项必须**一起替换**：沙箱 APPID 配生产网关会直接报错。
+
+| 变量名 | 当前值 | 说明 |
+|---|---|---|
+| `ATPAY_RETURN_URL` | 线上后端 `/pay/return?sharecode=...` | 支付宝付完款回跳的地址；托管平台需带访问码穿透拦截 |
+| `ATPAY_FRONT_URL` | 线上前端地址（带 sharecode） | 回跳中转后 302 到前端结果页 |
+| `ATPAY_NOTIFY_URL` | 留空 | 托管平台拦支付宝服务器请求，收不到异步通知；已用 `/pay/return` 和 `/pay/status` 主动查询兜底。迁到公网托管后再填 `https://域名/pay/notify` |
+
+**切完线上后的验证清单**（照 AI 付控制台「线上验证」走）：
+
+- [ ] 发起一笔 0.01 元真实支付，支付宝 APP 扫码完成付款
+- [ ] 付款后自动跳回结果页并显示「已支付」（走 `/pay/return` 主动查询）
+- [ ] （可选）测试退款流程
+- [ ] （可选）迁移到公网托管后补配 `ATPAY_NOTIFY_URL` 并复测
 
 ---
 
@@ -55,7 +69,7 @@ VITE_API_BASE_URL = https://你的后端域名
 - [ ] 前端已执行 `npm run build` 并部署产物
 - [ ] 后端启动日志出现「数据库连接成功」（确认 Neon 连接正常）
 - [ ] 逐个验证：注册/登录 → AI 对话（SSE 流式）→ 商品列表 → （可选）支付
-- [ ] 支付如需上线：支付宝已切生产网关 + 正式 APPID + 公网 notify/return 地址
+- [ ] 支付上线：AI 付线上 APPID + 私钥 + 支付宝公钥 + 生产网关（4 项一起换），0.01 元真实支付验证通过
 
 ---
 

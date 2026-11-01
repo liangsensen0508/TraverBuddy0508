@@ -87,10 +87,17 @@ class PayHandler {
    * GET /pay/return —— 支付完成后的浏览器中转跳转
    * 支付宝把用户带回这里（附带回跳参数），取出订单号后 302 到前端结果页。
    * 浏览器地址栏导航不会携带登录 token，所以本接口不做登录校验。
+   * 注意：托管平台收不到支付宝的异步通知（notify），
+   * 所以在这里主动向支付宝查一次真实状态并同步数据库，
+   * 这样用户付完款回到结果页时能立刻看到「已支付」。
    */
-  payReturn(req, res) {
+  async payReturn(req, res) {
     // 支付宝回跳时会带上 out_trade_no（商户订单号）
     const orderNo = req.query.out_trade_no || req.query.orderNo || "";
+    if (orderNo) {
+      // 查询失败不阻断跳转，结果页还会再查一次
+      await syncFromAlipay(orderNo).catch(() => {});
+    }
     const target = orderNo
       ? `${ATPAY.frontUrl}/#/pay-result?orderNo=${encodeURIComponent(orderNo)}`
       : `${ATPAY.frontUrl}/#/pay-result`;
