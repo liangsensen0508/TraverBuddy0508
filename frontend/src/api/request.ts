@@ -35,6 +35,9 @@ const service = axios.create({
 service.interceptors.request.use((config) => {
   const token = getToken()
   if (token) {
+    // X-Token 是自定义头，托管平台代理不会替换它（Authorization 的值会被平台改写）
+    config.headers['X-Token'] = token
+    // Authorization 保留，兼容本地开发和未来独立部署
     config.headers.Authorization = `Bearer ${token}`
   }
   return config

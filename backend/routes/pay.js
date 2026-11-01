@@ -6,11 +6,15 @@ const payHandler = require("../controller/payHander.js");
 const { JWT_SECRET } = require("../config/index.js");
 
 /**
- * 登录校验中间件：从请求头 Authorization: Bearer <token> 解析用户 id
+ * 登录校验中间件：解析请求头里的 JWT，把用户 id 挂到 req 上
+ * 优先取自定义头 X-Token：因为托管平台代理会替换 Authorization 头的值，
+ * 导致线上 token 永远校验失败；本地或独立部署时 Authorization 仍然兼容
  * 验证通过把 userId 挂到 req 上；失败返回 401
  */
 function auth(req, res, next) {
-  const token = (req.headers.authorization || "").replace("Bearer ", "");
+  const token =
+    req.headers["x-token"] ||
+    (req.headers.authorization || "").replace("Bearer ", "");
   try {
     req.userId = jwt.verify(token, JWT_SECRET).id;
     next();
