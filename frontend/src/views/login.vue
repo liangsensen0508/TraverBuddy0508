@@ -6,7 +6,7 @@
       <div class="brand-img">
         <img src="@/assets/mm1.jpg" alt="云游宝" />
       </div>
-      <h1 class="brand-title">欢迎回到云游宝</h1>
+      <h1 class="brand-title">欢迎回到游宝</h1>
       <p class="brand-sub">登录后开启你的专属旅行助手</p>
     </div>
 
@@ -66,9 +66,13 @@ const form = reactive({
   password: '',
 })
 
-/** 点击返回：返回上一页 */
+/** 点击返回：有历史时回上一页（比如从商品详情被拦过来），没有历史才回首页 */
 function goBack() {
-  router.replace('/')
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.replace('/')
+  }
 }
 
 /** 是否明文显示密码 */
@@ -123,9 +127,10 @@ async function onLogin() {
   }
 }
 
-/** 跳转到注册页 */
+/** 跳转到注册页：把 redirect 带过去，注册完登录后仍能回到原来的页面 */
 function goRegister() {
-  router.push('/register')
+  const redirect = route.query.redirect as string | undefined
+  router.push(redirect ? { path: '/register', query: { redirect } } : '/register')
 }
 </script>
 

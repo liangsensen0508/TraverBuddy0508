@@ -73,10 +73,14 @@ service.interceptors.response.use(
   }
 )
 
-/** 401 统一处理：退出登录并跳转登录页 */
+/** 401 统一处理：退出登录并跳转登录页，登录成功后可回到当前页面 */
 function handleUnauthorized() {
   logout()
-  router.replace('/login')
+  const current = router.currentRoute.value
+  // 已经在登录页时不重复跳转，避免循环
+  if (current.path === '/login') return
+  // 带上当前页面地址，登录后能回到原页面
+  router.replace({ path: '/login', query: { redirect: current.fullPath } })
 }
 
 /** GET 请求，返回拆包后的业务数据 */

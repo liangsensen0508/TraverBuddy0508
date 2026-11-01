@@ -77,11 +77,12 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { registerApi } from '@/api'
 
 const router = useRouter()
+const route = useRoute()
 
 /** 表单数据：用户名、手机号、密码、确认密码 */
 const form = reactive({
@@ -140,7 +141,9 @@ async function onRegister() {
       phone: form.phone,
     })
     showToast('注册成功，请登录')
-    setTimeout(() => router.replace('/login'), 400)
+    // 注册只是建账号、不算登录，所以跳到登录页继续；
+    // 带上 redirect（从登录页/详情页一路传过来的），登录成功后能回到原页面
+    setTimeout(goLogin, 400)
   } catch {
     // 错误提示已由响应拦截器处理
   } finally {
@@ -148,9 +151,10 @@ async function onRegister() {
   }
 }
 
-/** 返回登录页 */
+/** 回到登录页：带上 redirect（有的话），登录成功后能回到用户最初想去的页面 */
 function goLogin() {
-  router.replace('/login')
+  const redirect = route.query.redirect as string | undefined
+  router.replace(redirect ? { path: '/login', query: { redirect } } : '/login')
 }
 </script>
 
