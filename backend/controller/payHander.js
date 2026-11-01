@@ -1,6 +1,5 @@
 // 支付控制器：创建订单并生成支付表单 / 接收支付宝异步通知 / 查询订单支付状态
-// 支付产品：支付宝电脑网站支付 alipay.trade.page.pay（跳转支付宝收银台）
-// 注：手机网站支付(wap.pay)尚未开通；开通后移动端建议切回 alipay.trade.wap.pay
+// 支付产品按设备分流：电脑网站支付 page.pay（已开通）/ 手机网站支付 wap.pay（开通后把 AIPAY_ENABLE_WAP 设为 true）
 const { AlipaySdk } = require("alipay-sdk");
 const { pool } = require("../db.js");
 const { ATPAY } = require("../config/index.js");
@@ -22,22 +21,35 @@ function createNo(prefix) {
   return `${prefix}${Date.now()}${suffix}`;
 }
 
+/** 从请求头判断是否手机端（用于选择支付产品） */
+function isMobileRequest(req) {
+  return /Mobile|Android|iPhone|iPad/i.test(req.headers["user-agent"] || "");
+}
+
 /**
- * 生成支付宝 H5 支付表单
+ * 生成支付宝支付表单（按设备自动分流）
+ * - 手机端 + 已开通手机网站支付 → alipay.trade.wap.pay（可直接拉起支付宝App）
+ * - 其余情况 → alipay.trade.page.pay（电脑网站支付，手机上需网页登录支付宝付款）
  * 返回一段自动提交的 HTML 表单，前端写入页面即可跳转到支付宝收银台
  * @param orderNo 商户订单号（支付成功后凭它对账）
  * @param subject 商品名（收银台展示）
  * @param amount 金额字符串（两位小数，如 "128.00"）
+ * @param isMobile 是否手机端（由请求 UA 判断）
  */
-function createPayForm(orderNo, subject, amount) {
-  return alipayClient.pageExec("alipay.trade.page.pay", {
-    method: "POST",
-    bizContent: {
-      out_trade_no: orderNo,
-      total_amount: amount,
-      subject,
-      product_code: "FAST_INSTANT_TRADE_PAY", // 电脑网站支付的固定产品码
-    },
+function createPayForm(orderNo, subject, amount, isMobile) {
+  // 手机网站支付需在 AI 付控制台开通后，把环境变量 AIPAY_ENABLE_WAP 设为 true 才启用
+  const useWap = process.env.AIPAY_ENABLE_WAP === "true" && isMobile;
+  return alipayClient.pageExec(
+    useWap ? "alipay.trade.wap.pay" : "alipay.trade.page.pay",
+    {
+      method: "POST",
+      bizContent: {
+        out_trade_no: orderNo,
+        total_amount: amount,
+        subject,
+        // 各产品的固定产品码：手机网站 QUICK_WAP_WAY / 电脑网站 FAST_INSTANT_TRADE_PAY
+        product_code: useWap ? "QUICK_WAP_WAY" : "FAST_INSTANT_TRADE_PAY",
+      },
     // 同步回跳：付完款浏览器先到后端中转 /pay/return（地址不能带 #，会被网关截断），
     // 再由中转 302 到前端结果页
     returnUrl: ATPAY.returnUrl,
@@ -161,7 +173,7 @@ class PayHandler {
             order_no: order.order_no,
             pay_amount: order.pay_amount,
             expire_time: order.expire_time,
-            pay_form: createPayForm(order.order_no, order.title, Number(order.pay_amount).toFixed(2)),
+            pay_form: createPayForm(order.order_no, order.title, Number(order.pay_amount).toFixed(2), isMobileRequest(req)),
           });
         }
         // 买的是别的商品：先处理旧订单
@@ -191,7 +203,7 @@ class PayHandler {
         order_no: orderNo,
         pay_amount: payAmount.toFixed(2),
         expire_time: expireTime,
-        pay_form: createPayForm(orderNo, product.title, payAmount.toFixed(2)),
+        pay_form: createPayForm(orderNo, product.title, payAmount.toFixed(2), isMobileRequest(req)),
       });
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
