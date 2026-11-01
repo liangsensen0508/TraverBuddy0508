@@ -85,6 +85,37 @@ export async function chatApi(message: string, onChunk: (text: string) => void) 
   }
 }
 
+/* ---------------- 天气 ---------------- */
+
+/** 单日预报 */
+export interface WeatherForecastDay {
+  /** 日期，如 "2026-11-01" */
+  date: string
+  /** 中文天气状况 */
+  condition: string
+  high: number
+  low: number
+}
+
+/** 天气查询返回（字段与后端 GET /weather 一致） */
+export interface WeatherResult {
+  city: string
+  temperature: number
+  condition: string
+  high: number
+  low: number
+  humidity: string
+  wind: string
+  updateTime: string
+  /** 近 15 天预报 */
+  forecast: WeatherForecastDay[]
+}
+
+/** 查询指定城市的天气与近 15 天预报 */
+export function getWeatherApi(city: string) {
+  return get<WeatherResult>('/weather', { city })
+}
+
 /* ---------------- 商品 ---------------- */
 
 /** 行程亮点 */

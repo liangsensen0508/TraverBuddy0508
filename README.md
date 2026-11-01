@@ -5,7 +5,7 @@
 ## 技术栈
 
 - **前端**：Vue 3 + TypeScript + Vite 8 + Vant 4（移动端自适应）
-- **后端**：Node.js + Express 5 + WebSocket + PostgreSQL
+- **后端**：Node.js + Express 5 + PostgreSQL（AI 对话用 SSE 流式输出）
 - **其他**：支付宝沙箱支付、JWT 鉴权、SiliconFlow（DeepSeek-V3）大模型
 
 ## 目录结构
@@ -13,7 +13,7 @@
 ```
 Travel buddy/
 ├── frontend/          # Vue 3 前端（H5）
-├── backend/           # Express 后端 + WebSocket
+├── backend/           # Express 后端 + PostgreSQL（SSE 流式）
 └── .gitignore
 ```
 

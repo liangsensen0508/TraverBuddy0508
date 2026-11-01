@@ -46,8 +46,8 @@ import BottomBar from '@/components/BottomBar.vue'
 import ChatMessage from '@/components/ChatMessage.vue'
 import TrainTicketCard from '@/components/TrainTicketCard.vue'
 import WeatherCard from '@/components/WeatherCard.vue'
-import { getTrainCardMock, getWeatherCardMock, type TrainCardData, type WeatherCardData } from '@/mock/cards'
-import { chatApi, getProductListApi, type ProductListItem } from '@/api'
+import { getTrainCardMock, type TrainCardData } from '@/mock/cards'
+import { chatApi, getProductListApi, getWeatherApi, type ProductListItem, type WeatherResult } from '@/api'
 
 interface ChatMsg {
   role: 'user' | 'ai'
@@ -57,8 +57,8 @@ interface ChatMsg {
   tool?: 'train' | 'weather'
   /** 火车票工具数据 */
   train?: TrainCardData
-  /** 天气工具数据 */
-  weather?: WeatherCardData
+  /** 天气工具数据（真实接口返回） */
+  weather?: WeatherResult
 }
 
 const message = ref('')
@@ -101,6 +101,12 @@ function detectTool(text: string): ChatMsg['tool'] {
   return undefined
 }
 
+/** 从问题里提取城市名，提取不到则默认「杭州」。例如「北京天气」-> 北京 */
+function extractCity(text: string): string {
+  const m = text.match(/([一-龥]{2,6}?)(?:市|的)?(?:天气|气温|温度)/)
+  return m ? m[1] : '杭州'
+}
+
 /** 发送用户消息，并把流式返回的文本逐步追加到同一条 AI 消息中 */
 async function handleSend(payload: { text: string; image?: string }) {
   messages.value.push({ role: 'user', text: payload.text, image: payload.image })
@@ -127,10 +133,17 @@ async function handleSend(payload: { text: string; image?: string }) {
       messages.value.push(aiMessage)
     }
 
-    // 工具卡片目前是演示数据，后端返回真实工具结果后替换这里
+    // 天气卡片：调真实接口；火车票卡片：暂时仍是演示数据
     aiMessage.tool = tool
-    aiMessage.train = tool === 'train' ? getTrainCardMock() : undefined
-    aiMessage.weather = tool === 'weather' ? getWeatherCardMock() : undefined
+    if (tool === 'weather') {
+      try {
+        aiMessage.weather = await getWeatherApi(extractCity(payload.text))
+      } catch {
+        // 天气接口失败时静默处理，AI 文字回复仍可正常展示
+      }
+    } else if (tool === 'train') {
+      aiMessage.train = getTrainCardMock()
+    }
   } catch {
     messages.value.push({ role: 'ai', text: '抱歉，AI 服务暂时不可用，请稍后再试' })
   } finally {

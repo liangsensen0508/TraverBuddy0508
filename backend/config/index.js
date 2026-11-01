@@ -1,4 +1,4 @@
-// 本地开发：自动加载 websocket/.env（不存在则忽略，继续用系统/平台注入的环境变量）
+// 本地开发：自动加载 backend/.env（不存在则忽略，继续用系统/平台注入的环境变量）
 // 线上部署时不要把 .env 上传，直接在服务器/平台的环境变量里配置同名变量
 const path = require("node:path");
 try {
@@ -23,18 +23,37 @@ const SILICONFLOW_MODEL =
   process.env.SILICONFLOW_MODEL || "deepseek-ai/DeepSeek-V3";
 
 // ---------- PostgreSQL 数据库配置 ----------
-// 通过环境变量传入，避免把密码硬编码在代码里
-const DB_CONFIG = {
-  host: process.env.PG_HOST || "localhost",
-  port: Number(process.env.PG_PORT || 5432),
-  user: process.env.PG_USER || "postgres",
-  password: process.env.PG_PASSWORD || "asd.1314", // 必填：通过环境变量 PG_PASSWORD 传入
-  database: process.env.PG_DATABASE || "postgres",
-};
+// 优先用 DATABASE_URL（线上平台一般直接注入这一个变量）；
+// 本地开发用 .env 里的 PG_HOST / PG_PORT / PG_USER / PG_PASSWORD / PG_DATABASE 分项配置
+const DB_CONFIG = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    }
+  : {
+      host: process.env.PG_HOST || "localhost",
+      port: Number(process.env.PG_PORT) || 5432,
+      user: process.env.PG_USER || "postgres",
+      password: process.env.PG_PASSWORD || "",
+      database: process.env.PG_DATABASE || "postgres",
+      // 本地 PostgreSQL 默认不启用 SSL，这里不能开，否则报 "server does not support SSL"
+      ssl: false,
+    };
 
 // ---------- JWT 配置 ----------
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+
+// ---------- CORS 配置 ----------
+// 允许跨域访问的前端域名，逗号分隔。留空则回退为允许所有来源（仅本地开发用）。
+// 上线时请务必在环境变量里配置你的前端正式域名，例如：
+//   CORS_ORIGINS=https://your-app.com,https://www.your-app.com
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 // ---------- 支付宝 AI 网页应用收款配置 ----------
 const ATPAY = {
@@ -68,5 +87,6 @@ module.exports = {
   DB_CONFIG,
   JWT_SECRET,
   JWT_EXPIRES_IN,
+  CORS_ORIGINS,
   ATPAY,
 };

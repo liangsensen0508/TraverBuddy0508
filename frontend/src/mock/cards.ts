@@ -1,4 +1,5 @@
-// 火车票和天气卡片的临时演示数据。后端提供真实数据后，删除本文件即可。
+// 火车票卡片的临时演示数据。后端提供真实数据后，删除本文件即可。
+// 天气数据已改为真实接口（GET /weather），不再使用 mock。
 
 interface TrainTicket {
   trainNo: string
@@ -17,25 +18,6 @@ export interface TrainCardData {
   to: string
   date: string
   tickets: TrainTicket[]
-}
-
-interface ForecastDay {
-  day: string
-  condition: string
-  high: number
-  low: number
-}
-
-export interface WeatherCardData {
-  city: string
-  temperature: number
-  condition: string
-  high: number
-  low: number
-  humidity: string
-  wind: string
-  updateTime: string
-  forecast: ForecastDay[]
 }
 
 /** 返回一份火车票演示数据，字段与 TrainTicketCard 的 props 一致 */
@@ -67,25 +49,6 @@ export function getTrainCardMock(): TrainCardData {
         seatType: '二等座',
         seatStatus: '候补',
       },
-    ],
-  }
-}
-
-/** 返回一份天气演示数据，字段与 WeatherCard 的 props 一致 */
-export function getWeatherCardMock(): WeatherCardData {
-  return {
-    city: '杭州',
-    temperature: 26,
-    condition: '多云',
-    high: 27,
-    low: 18,
-    humidity: '62%',
-    wind: '东南风 3级',
-    updateTime: '08:00',
-    forecast: [
-      { day: '今天', condition: '多云', high: 27, low: 18 },
-      { day: '明天', condition: '小雨', high: 24, low: 17 },
-      { day: '后天', condition: '晴', high: 28, low: 19 },
     ],
   }
 }

@@ -1,88 +1,50 @@
 <template>
   <div class="weather-card">
-    <!-- 城市与更新时间 -->
-    <div class="city-row">
-      <van-icon name="location-o" size="13" />
-      <span class="city">{{ city }}</span>
+    <!-- 顶部：城市 + 当前天气，仿手机天气 App 头部 -->
+    <div class="header">
+      <div class="city">
+        <van-icon name="location-o" size="14" />
+        <span>{{ city }}</span>
+      </div>
       <span class="update">{{ updateTime }} 更新</span>
     </div>
 
-    <!-- 当前温度与天气 -->
-    <div class="temp-row">
-      <div class="temp">{{ temperature }}<span class="deg">°</span></div>
-      <div class="cond">
-        <div class="cond-text">{{ condition }}</div>
-        <div class="range">{{ low }}° ~ {{ high }}°</div>
-      </div>
-
-      <svg
-        v-if="iconType === 'sun'"
-        class="weather-icon"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-      >
-        <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" opacity="0.9" />
-        <path
-          d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"
-        />
-      </svg>
-
-      <svg
-        v-else-if="iconType === 'cloud'"
-        class="weather-icon"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10Z" />
-      </svg>
-
-      <svg
-        v-else
-        class="weather-icon"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25" />
-        <path d="M16 13v6M8 13v6M12 15v6" />
-      </svg>
+    <!-- 当前温度：大字号，居中显示 -->
+    <div class="now">
+      <div class="now-temp">{{ temperature }}<span class="deg">°</span></div>
+      <div class="now-cond">{{ condition }}</div>
+      <div class="now-range">{{ high }}° / {{ low }}°</div>
     </div>
 
-    <!-- 湿度、风力 -->
-    <div class="meta-row">
-      <span class="meta-item">湿度 {{ humidity }}</span>
-      <span class="meta-divider"></span>
-      <span class="meta-item">{{ wind }}</span>
+    <!-- 当前湿度、风速 -->
+    <div class="meta">
+      <span>湿度 {{ humidity }}</span>
+      <span class="dot"></span>
+      <span>风速 {{ wind }}</span>
     </div>
 
-    <!-- 未来几天 -->
+    <!-- 近 15 天预报：横向滑动，每列一天 -->
     <div class="forecast">
-      <div v-for="(f, i) in forecast" :key="i" class="forecast-item">
-        <span class="f-day">{{ f.day }}</span>
-        <span class="f-cond">{{ f.condition }}</span>
-        <span class="f-range">{{ f.high }}° / {{ f.low }}°</span>
+      <div class="forecast-title">近 15 天预报</div>
+      <div class="forecast-scroll">
+        <div v-for="(f, i) in forecast" :key="f.date" class="day">
+          <span class="day-name">{{ dayLabel(f.date, i) }}</span>
+          <WeatherIcon :condition="f.condition" class="day-icon" />
+          <span class="day-high">{{ f.high }}°</span>
+          <span class="day-low">{{ f.low }}°</span>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { h } from 'vue'
 
 interface ForecastDay {
-  /** 今天 / 明天 / 后天 */
-  day: string
-  /** 天气状况 */
+  /** 日期，如 "2026-11-01" */
+  date: string
+  /** 中文天气状况 */
   condition: string
   /** 最高温 */
   high: number
@@ -91,171 +53,191 @@ interface ForecastDay {
 }
 
 interface Props {
-  /** 城市 */
   city: string
-  /** 当前温度 */
   temperature: number
-  /** 当前天气状况 */
   condition: string
-  /** 最高温 */
   high: number
-  /** 最低温 */
   low: number
-  /** 湿度 */
   humidity: string
-  /** 风力 */
   wind: string
-  /** 数据更新时间 */
   updateTime: string
-  /** 未来几天预报 */
+  /** 近 15 天预报 */
   forecast: ForecastDay[]
 }
 
 const props = defineProps<Props>()
 
-/** 根据天气状况选择图标 */
-const iconType = computed(() => {
-  if (/雨|雪/.test(props.condition)) return 'rain'
-  if (/云|阴|雾|霾/.test(props.condition)) return 'cloud'
-  return 'sun'
-})
+/** 日期显示：今天 / 明天 / 周X */
+function dayLabel(date: string, index: number): string {
+  if (index === 0) return '今天'
+  if (index === 1) return '明天'
+  const week = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  return week[new Date(date).getDay()]
+}
+
+/**
+ * 天气小图标（按天气状况返回不同 SVG）。
+ * 用渲染函数定义，避免在模板里堆大段 SVG，保持代码简洁。
+ */
+const WeatherIcon = (p: { condition: string }) => {
+  const c = p.condition
+  // 根据天气状况选图形：雨/雪/雷 -> 雨云；多云/阴/雾 -> 云；其余 -> 太阳
+  const type = /雨|雪|雷/.test(c) ? 'rain' : /云|阴|雾|霾/.test(c) ? 'cloud' : 'sun'
+  const common = {
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    'stroke-width': 1.8,
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+    width: 26,
+    height: 26,
+  }
+  if (type === 'sun') {
+    return h('svg', common, [
+      h('circle', { cx: 12, cy: 12, r: 4, fill: 'currentColor', stroke: 'none' }),
+      h('path', { d: 'M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19' }),
+    ])
+  }
+  if (type === 'cloud') {
+    return h('svg', common, [h('path', { d: 'M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10Z' })])
+  }
+  return h('svg', common, [
+    h('path', { d: 'M20 15.6A5 5 0 0 0 18 7h-1.3A8 8 0 1 0 4 15.3' }),
+    h('path', { d: 'M16 14v6M8 14v6M12 16v6' }),
+  ])
+}
 </script>
 
 <style scoped lang="less">
 .weather-card {
-  position: relative;
   width: 100%;
-  max-width: 288px;
+  max-width: 320px;
   box-sizing: border-box;
-  padding: 14px 16px 12px;
-  border-radius: 16px;
-  overflow: hidden;
+  padding: 16px;
+  border-radius: 18px;
   color: #fff;
-  background: linear-gradient(135deg, #58b7ff 0%, #3078f5 100%);
-  box-shadow: 0 6px 18px rgba(48, 120, 245, 0.28);
+  // 手机天气 App 常用的蓝色渐变背景
+  background: linear-gradient(160deg, #4a9eff 0%, #2b6fe0 100%);
+  box-shadow: 0 6px 20px rgba(43, 111, 224, 0.3);
+}
 
-  // 右上角光晕装饰
-  &::after {
-    content: '';
-    position: absolute;
-    top: -46px;
-    right: -34px;
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.14);
-    pointer-events: none;
-  }
+// 顶部城市行
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
-  .city-row {
-    position: relative;
-    z-index: 1;
+  .city {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 13px;
-
-    .city {
-      font-weight: 600;
-    }
-
-    .update {
-      margin-left: auto;
-      font-size: 10px;
-      opacity: 0.72;
-    }
+    font-size: 14px;
+    font-weight: 600;
   }
 
-  .temp-row {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    margin-top: 8px;
-
-    .temp {
-      font-size: 42px;
-      font-weight: 700;
-      line-height: 1;
-      font-variant-numeric: tabular-nums;
-
-      .deg {
-        margin-left: 1px;
-        font-size: 20px;
-        font-weight: 400;
-      }
-    }
-
-    .cond {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      margin-left: 10px;
-
-      .cond-text {
-        font-size: 14px;
-        font-weight: 600;
-      }
-
-      .range {
-        font-size: 11px;
-        opacity: 0.8;
-      }
-    }
-
-    .weather-icon {
-      width: 46px;
-      height: 46px;
-      margin-left: auto;
-      opacity: 0.92;
-    }
-  }
-
-  .meta-row {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 10px;
+  .update {
     font-size: 11px;
-    opacity: 0.85;
+    opacity: 0.75;
+  }
+}
 
-    .meta-divider {
-      width: 1px;
-      height: 10px;
-      background: rgba(255, 255, 255, 0.5);
+// 当前温度区
+.now {
+  margin-top: 12px;
+  text-align: center;
+
+  .now-temp {
+    font-size: 56px;
+    font-weight: 300;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+
+    .deg {
+      font-size: 28px;
+      vertical-align: top;
     }
   }
 
-  .forecast {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    margin-top: 12px;
-    padding-top: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.25);
+  .now-cond {
+    margin-top: 6px;
+    font-size: 16px;
+  }
 
-    .forecast-item {
-      flex: 1;
+  .now-range {
+    margin-top: 4px;
+    font-size: 13px;
+    opacity: 0.85;
+  }
+}
+
+// 湿度、风速
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 12px;
+  opacity: 0.85;
+
+  .dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+}
+
+// 近 15 天预报
+.forecast {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+
+  .forecast-title {
+    font-size: 12px;
+    opacity: 0.85;
+    margin-bottom: 10px;
+  }
+
+  // 横向可滑动，超出可滚动；隐藏滚动条
+  .forecast-scroll {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; // Firefox 隐藏滚动条
+
+    &::-webkit-scrollbar {
+      display: none; // Chrome/Safari 隐藏滚动条
+    }
+
+    .day {
+      flex: 0 0 auto; // 不压缩，保持固定宽度
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 3px;
+      gap: 6px;
+      width: 40px;
 
-      .f-day {
-        font-size: 11px;
+      .day-name {
+        font-size: 12px;
         opacity: 0.9;
       }
 
-      .f-cond {
-        font-size: 10px;
-        opacity: 0.72;
+      .day-icon {
+        color: #fff;
       }
 
-      .f-range {
-        font-size: 11px;
+      .day-high {
+        font-size: 13px;
         font-weight: 600;
+      }
+
+      .day-low {
+        font-size: 12px;
+        opacity: 0.7;
       }
     }
   }
