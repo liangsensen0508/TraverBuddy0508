@@ -1,5 +1,6 @@
 // 支付控制器：创建订单并生成支付表单 / 接收支付宝异步通知 / 查询订单支付状态
-// 支付产品：支付宝手机网站支付 alipay.trade.wap.pay（H5 页面跳转收银台）
+// 支付产品：支付宝电脑网站支付 alipay.trade.page.pay（跳转支付宝收银台）
+// 注：手机网站支付(wap.pay)尚未开通；开通后移动端建议切回 alipay.trade.wap.pay
 const { AlipaySdk } = require("alipay-sdk");
 const { pool } = require("../db.js");
 const { ATPAY } = require("../config/index.js");
@@ -29,13 +30,13 @@ function createNo(prefix) {
  * @param amount 金额字符串（两位小数，如 "128.00"）
  */
 function createPayForm(orderNo, subject, amount) {
-  return alipayClient.pageExec("alipay.trade.wap.pay", {
+  return alipayClient.pageExec("alipay.trade.page.pay", {
     method: "POST",
     bizContent: {
       out_trade_no: orderNo,
       total_amount: amount,
       subject,
-      product_code: "QUICK_WAP_WAY", // 手机网站支付的固定产品码
+      product_code: "FAST_INSTANT_TRADE_PAY", // 电脑网站支付的固定产品码
     },
     // 同步回跳：付完款浏览器先到后端中转 /pay/return（地址不能带 #，会被网关截断），
     // 再由中转 302 到前端结果页
