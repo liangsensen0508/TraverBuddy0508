@@ -58,26 +58,28 @@ const CORS_ORIGINS = (process.env.CORS_ORIGINS || "")
 // ---------- 支付宝 AI 网页应用收款配置 ----------
 const ATPAY = {
   // 应用 APPID（沙箱应用以 9021 开头）
-  appId: process.env.ATPAY_APP_ID || "",
+  appId: process.env.AIPAY_APP_ID || "",
 
-  // 应用私钥（PKCS#1 格式，请求签名用）
-  privateKey: process.env.ATPAY_PRIVATE_KEY || "",
+  // 应用私钥（PKCS1 或 PKCS8 格式均可，alipay-sdk 会自动识别）
+  // 控制台的「非 JAVA 语言私钥」放在 AIPAY_PRIVATE_PKCS_KEY，「JAVA 语言私钥」放在 AIPAY_PRIVATE_KEY
+  privateKey: process.env.AIPAY_PRIVATE_PKCS_KEY || process.env.AIPAY_PRIVATE_KEY || "",
 
   // 支付宝公钥（验证支付宝发来的异步通知 / 响应签名用；为空时验签不生效）
-  alipayPublicKey: process.env.ATPAY_ALIPAY_PUBLIC_KEY || "",
+  // 注意：必须是「支付宝公钥」(AIPAY_ALIPAY_PUBLIC_KEY)，不是你自己的「应用公钥」(AIPAY_PUBLIC_KEY)
+  alipayPublicKey: process.env.AIPAY_ALIPAY_PUBLIC_KEY || "",
 
   // 网关地址：默认沙箱，上线切换 https://openapi.alipay.com/gateway.do
-  gateway: process.env.ATPAY_GATEWAY || "https://openapi-sandbox.dl.alipaydev.com/gateway.do",
+  gateway: process.env.AIPAY_GATEWAY || "https://openapi-sandbox.dl.alipaydev.com/gateway.do",
 
   // 支付完成后浏览器回跳地址（同步回跳）。前端是 hash 路由，
   // 地址里的 # 会被支付宝网关截断，所以先回跳到后端中转，再 302 到前端结果页
-  returnUrl: process.env.ATPAY_RETURN_URL || "http://localhost:3000/pay/return",
+  returnUrl: process.env.AIPAY_RETURN_URL || "http://localhost:3000/pay/return",
 
   // 前端页面地址：中转跳转的目标（本地开发为 Vite dev server）
-  frontUrl: process.env.ATPAY_FRONT_URL || "http://localhost:5173",
+  frontUrl: process.env.AIPAY_FRONT_URL || "http://localhost:5173",
 
   // 支付成功异步通知地址（必须公网可访问；本地开发留空，靠订单状态查询接口兜底）
-  notifyUrl: process.env.ATPAY_NOTIFY_URL || "",
+  notifyUrl: process.env.AIPAY_NOTIFY_URL || "",
 };
 
 module.exports = {

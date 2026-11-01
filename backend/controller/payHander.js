@@ -260,7 +260,7 @@ class PayHandler {
   async notify(req, res) {
     // 没配置支付宝公钥就无法验签：拒绝处理，避免被伪造通知刷单
     if (!ATPAY.alipayPublicKey) {
-      console.error("[pay/notify] 未配置 ATPAY_ALIPAY_PUBLIC_KEY，无法验签，通知已拒绝");
+      console.error("[pay/notify] 未配置 AIPAY_ALIPAY_PUBLIC_KEY，无法验签，通知已拒绝");
       return res.send("fail");
     }
     if (!alipayClient.checkNotifySign(req.body)) {
